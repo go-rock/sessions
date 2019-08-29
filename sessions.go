@@ -1,16 +1,21 @@
 package sessions
 
 import (
+	"context"
 	"log"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
-	"github.com/gorilla/context"
+	"github.com/go-rock/rock"
 	"github.com/gorilla/sessions"
 )
 
+type ContextKey struct {
+	name string
+}
+
+var DefaultKey = &ContextKey{"github.com/go-rock/sessions"}
+
 const (
-	DefaultKey  = "github.com/gin-contrib/sessions"
 	errorFormat = "[sessions] ERROR! %s\n"
 )
 
@@ -57,12 +62,21 @@ type Session interface {
 	Save() error
 }
 
-func Sessions(name string, store Store) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		s := &session{name, c.Request, store, nil, false, c.Writer}
-		c.Set(DefaultKey, s)
-		defer context.Clear(c.Request)
-		c.Next()
+func Sessions(name string, store Store) func(next http.Handler) http.Handler {
+	// return func(c rock.Context) {
+	// 	s := &session{name, c.Request, store, nil, false, c.Writer}
+	// 	c.Set(DefaultKey, s)
+	// 	// defer context.Clear(c.Request)
+	// 	c.Next()
+
+	// }
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			s := &session{name, r, store, nil, false, w}
+
+			r = r.WithContext(context.WithValue(r.Context(), DefaultKey, s))
+			next.ServeHTTP(w, r)
+		})
 	}
 }
 
@@ -142,6 +156,11 @@ func (s *session) Written() bool {
 }
 
 // shortcut to get session
-func Default(c *gin.Context) Session {
-	return c.MustGet(DefaultKey).(Session)
+func Default(c rock.Context) Session {
+	return c.Request().Context().Value(DefaultKey).(Session)
+}
+
+// shortcut to get session
+func DefaultReqeust(r *http.Request) Session {
+	return r.Context().Value(DefaultKey).(Session)
 }

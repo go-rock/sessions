@@ -4,13 +4,14 @@
 package tester
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
-	"github.com/gin-contrib/sessions"
-	"github.com/gin-gonic/gin"
+	"github.com/go-rock/rock"
+	"github.com/go-rock/sessions"
 )
 
 type storeFactory func(*testing.T) sessions.Store
@@ -20,21 +21,21 @@ const sessionName = "mysession"
 const ok = "ok"
 
 func init() {
-	gin.SetMode(gin.TestMode)
+	// gin.SetMode(gin.TestMode)
 }
 
 func GetSet(t *testing.T, newStore storeFactory) {
-	r := gin.Default()
+	r := rock.Default()
 	r.Use(sessions.Sessions(sessionName, newStore(t)))
 
-	r.GET("/set", func(c *gin.Context) {
+	r.GET("/set", func(c rock.Context) {
 		session := sessions.Default(c)
 		session.Set("key", ok)
 		session.Save()
 		c.String(200, ok)
 	})
 
-	r.GET("/get", func(c *gin.Context) {
+	r.GET("/get", func(c rock.Context) {
 		session := sessions.Default(c)
 		if session.Get("key") != ok {
 			t.Error("Session writing failed")
@@ -54,24 +55,24 @@ func GetSet(t *testing.T, newStore storeFactory) {
 }
 
 func DeleteKey(t *testing.T, newStore storeFactory) {
-	r := gin.Default()
+	r := rock.Default()
 	r.Use(sessions.Sessions(sessionName, newStore(t)))
 
-	r.GET("/set", func(c *gin.Context) {
+	r.GET("/set", func(c rock.Context) {
 		session := sessions.Default(c)
 		session.Set("key", ok)
 		session.Save()
 		c.String(200, ok)
 	})
 
-	r.GET("/delete", func(c *gin.Context) {
+	r.GET("/delete", func(c rock.Context) {
 		session := sessions.Default(c)
 		session.Delete("key")
 		session.Save()
 		c.String(200, ok)
 	})
 
-	r.GET("/get", func(c *gin.Context) {
+	r.GET("/get", func(c rock.Context) {
 		session := sessions.Default(c)
 		if session.Get("key") != nil {
 			t.Error("Session deleting failed")
@@ -96,31 +97,32 @@ func DeleteKey(t *testing.T, newStore storeFactory) {
 }
 
 func Flashes(t *testing.T, newStore storeFactory) {
-	r := gin.Default()
+	r := rock.Default()
 	store := newStore(t)
 	store.Options(sessions.Options{
 		Domain: "localhost",
 	})
 	r.Use(sessions.Sessions(sessionName, store))
 
-	r.GET("/set", func(c *gin.Context) {
+	r.GET("/set", func(c rock.Context) {
 		session := sessions.Default(c)
 		session.AddFlash(ok)
 		session.Save()
 		c.String(200, ok)
 	})
 
-	r.GET("/flash", func(c *gin.Context) {
+	r.GET("/flash", func(c rock.Context) {
 		session := sessions.Default(c)
 		l := len(session.Flashes())
 		if l != 1 {
+			fmt.Println(l)
 			t.Error("Flashes count does not equal 1. Equals ", l)
 		}
 		session.Save()
 		c.String(200, ok)
 	})
 
-	r.GET("/check", func(c *gin.Context) {
+	r.GET("/check", func(c rock.Context) {
 		session := sessions.Default(c)
 		l := len(session.Flashes())
 		if l != 0 {
@@ -150,11 +152,11 @@ func Clear(t *testing.T, newStore storeFactory) {
 		"key": "val",
 		"foo": "bar",
 	}
-	r := gin.Default()
+	r := rock.Default()
 	store := newStore(t)
 	r.Use(sessions.Sessions(sessionName, store))
 
-	r.GET("/set", func(c *gin.Context) {
+	r.GET("/set", func(c rock.Context) {
 		session := sessions.Default(c)
 		for k, v := range data {
 			session.Set(k, v)
@@ -164,7 +166,7 @@ func Clear(t *testing.T, newStore storeFactory) {
 		c.String(200, ok)
 	})
 
-	r.GET("/check", func(c *gin.Context) {
+	r.GET("/check", func(c rock.Context) {
 		session := sessions.Default(c)
 		for k, v := range data {
 			if session.Get(k) == v {
@@ -186,14 +188,14 @@ func Clear(t *testing.T, newStore storeFactory) {
 }
 
 func Options(t *testing.T, newStore storeFactory) {
-	r := gin.Default()
+	r := rock.Default()
 	store := newStore(t)
 	store.Options(sessions.Options{
 		Domain: "localhost",
 	})
 	r.Use(sessions.Sessions(sessionName, store))
 
-	r.GET("/domain", func(c *gin.Context) {
+	r.GET("/domain", func(c rock.Context) {
 		session := sessions.Default(c)
 		session.Set("key", ok)
 		session.Options(sessions.Options{
@@ -202,7 +204,7 @@ func Options(t *testing.T, newStore storeFactory) {
 		session.Save()
 		c.String(200, ok)
 	})
-	r.GET("/path", func(c *gin.Context) {
+	r.GET("/path", func(c rock.Context) {
 		session := sessions.Default(c)
 		session.Set("key", ok)
 		session.Save()

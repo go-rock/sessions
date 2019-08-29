@@ -3,8 +3,8 @@ package redis
 import (
 	"testing"
 
-	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/tester"
+	"github.com/go-rock/sessions"
+	"github.com/go-rock/sessions/tester"
 )
 
 const redisTestServer = "localhost:6379"
